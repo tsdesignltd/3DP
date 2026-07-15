@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3Dプリンター出力品 原価計算</title>
+  <style>
+    :root { color-scheme: light; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", sans-serif;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      padding: 24px 16px;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 28px 28px 32px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+    }
+    h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #1d1d1f;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #6e6e73;
+      margin-bottom: 24px;
+    }
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6e6e73;
+      margin: 24px 0 12px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    /* 主要3変数カード */
+    .var-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .var-card {
+      background: #f5f5f7;
+      border-radius: 12px;
+      padding: 14px 14px 12px;
+    }
+    .var-card-label {
+      font-size: 11px;
+      color: #6e6e73;
+      margin-bottom: 8px;
+    }
+    .var-card-val {
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #1d1d1f;
+    }
+    /* スライダー共通 */
+    input[type="range"] {
+      width: 100%;
+      accent-color: #0071e3;
+      cursor: pointer;
+    }
+    /* パラメーター行 */
+    .param-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .param-label {
+      font-size: 13px;
+      color: #6e6e73;
+      min-width: 160px;
+    }
+    .param-value {
+      font-size: 13px;
+      font-weight: 500;
+      min-width: 80px;
+      text-align: right;
+      color: #1d1d1f;
+    }
+    /* 内訳 */
+    .breakdown {
+      border-top: 1px solid #e5e5ea;
+      margin-top: 24px;
+      padding-top: 14px;
+    }
+    .brow {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 6px 0;
+      border-bottom: 0.5px solid #e5e5ea;
+    }
+    .brow:last-child { border-bottom: none; }
+    .blabel { color: #6e6e73; }
+    .bval { font-weight: 500; }
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 16px;
+      font-weight: 600;
+      padding: 12px 0 0;
+      margin-top: 8px;
+      border-top: 1.5px solid #1d1d1f;
+    }
+    /* 構成比バー */
+    .bar-wrap {
+      display: flex;
+      gap: 3px;
+      height: 10px;
+      border-radius: 6px;
+      overflow: hidden;
+      margin: 16px 0 8px;
+    }
+    .bar-seg { height: 100%; transition: width 0.2s; }
+    .legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: #6e6e73;
+      margin-bottom: 16px;
+    }
+    .legend span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+    /* 売価カード */
+    .price-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .price-card {
+      background: #f5f5f7;
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .price-label { font-size: 12px; color: #6e6e73; margin-bottom: 6px; }
+    .price-num { font-size: 22px; font-weight: 600; color: #1d1d1f; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>3Dプリンター出力品 原価計算</h1>
+  <p class="subtitle">Bambu Lab H2D / フィラメント出力</p>
+  <div class="var-grid">
+    <div class="var-card">
+      <div class="var-card-label">フィラメント単価</div>
+      <div class="var-card-val" id="filPriceOut">2,800 円/kg</div>
+      <input type="range" min="1000" max="50000" step="500" value="2800" id="filPrice">
+    </div>
+    <div class="var-card">
+      <div class="var-card-label">フィラメント使用量</div>
+      <div class="var-card-val" id="filGramOut">7 g</div>
+      <input type="range" min="1" max="200" step="1" value="7" id="filGram">
+    </div>
+    <div class="var-card">
+      <div class="var-card-label">出力時間</div>
+      <div class="var-card-val" id="printTimeOut">0h 20m</div>
+      <input type="range" min="1" max="1800" step="1" value="20" id="printTime">
+    </div>
+  </div>
+  <div class="section-title">プリンター設定</div>
+  <div class="param-row">
+    <span class="param-label">機器代</span>
+    <input type="range" min="50000" max="1000000" step="10000" value="300000" id="machineCost" style="flex:1;">
+    <span class="param-value" id="machineCostOut">300,000 円</span>
+  </div>
+  <div class="param-row">
+    <span class="param-label">償却期間</span>
+    <input type="range" min="1" max="10" step="1" value="2" id="depYear" style="flex:1;">
+    <span class="param-value" id="depYearOut">2 年</span>
+  </div>
+  <div class="param-row">
+    <span class="param-label">年間稼働日</span>
+    <input type="range" min="50" max="365" step="5" value="240" id="workDays" style="flex:1;">
+    <span class="param-value" id="workDaysOut">240 日</span>
+  </div>
+  <div class="param-row">
+    <span class="param-label">1日稼働時間</span>
+    <input type="range" min="1" max="24" step="1" value="8" id="workHours" style="flex:1;">
+    <span class="param-value" id="workHoursOut">8 時間</span>
+  </div>
+  <div class="section-title">電気代</div>
+  <div class="param-row">
+    <span class="param-label">消費電力（平均）</span>
+    <input type="range" min="100" max="2000" step="50" value="500" id="power" style="flex:1;">
+    <span class="param-value" id="powerOut">500 W</span>
+  </div>
+  <div class="param-row">
+    <span class="param-label">電気代単価</span>
+    <input type="range" min="15" max="50" step="1" value="27" id="elecRate" style="flex:1;">
+    <span class="param-value" id="elecRateOut">27 円/kWh</span>
+  </div>
+  <div class="section-title">品質</div>
+  <div class="param-row">
+    <span class="param-label">不良率</span>
+    <input type="range" min="0" max="60" step="1" value="20" id="defectRate" style="flex:1;">
+    <span class="param-value" id="defectRateOut">20 %</span>
+  </div>
+  <div class="breakdown">
+    <div class="brow"><span class="blabel">フィラメント費</span><span class="bval" id="r-fil">—</span></div>
+    <div class="brow"><span class="blabel">機器償却費（1出力あたり）</span><span class="bval" id="r-dep">—</span></div>
+    <div class="brow"><span class="blabel">電気代（1出力あたり）</span><span class="bval" id="r-elec">—</span></div>
+    <div class="brow" style="font-weight:500;"><span class="blabel">直接製造原価（良品換算前）</span><span class="bval" id="r-direct">—</span></div>
+    <div class="brow" style="font-size:12px;color:#6e6e73;"><span class="blabel">不良率換算係数（÷良品率）</span><span class="bval" id="r-factor">—</span></div>
+    <div class="total-row"><span>原価合計（良品1個あたり）</span><span id="r-total">—</span></div>
+  </div>
+  <div class="bar-wrap" id="barWrap"></div>
+  <div class="legend" id="legend"></div>
+  <div class="price-grid">
+    <div class="price-card">
+      <div class="price-label">想定売価（原価2倍）</div>
+      <div class="price-num" id="m-price2x">—</div>
+    </div>
+    <div class="price-card">
+      <div class="price-label">想定売価（原価3倍）</div>
+      <div class="price-num" id="m-price3x">—</div>
+    </div>
+  </div>
+</div>
+<script>
+  const ids = ['filPrice','filGram','machineCost','depYear','workDays','workHours','printTime','power','elecRate','defectRate'];
+  const fmt  = n => Math.round(n).toLocaleString('ja-JP');
+  const fmtD = n => n.toFixed(2);
+  const fmtTime = mins => {
+    const h = Math.floor(mins / 60), m = mins % 60;
+    return h > 0 ? h + 'h ' + m + 'm' : m + 'm';
+  };
+  function calc() {
+    const v = {};
+    ids.forEach(id => v[id] = parseFloat(document.getElementById(id).value));
+    document.getElementById('filPriceOut').textContent   = fmt(v.filPrice)   + ' 円/kg';
+    document.getElementById('filGramOut').textContent    = v.filGram          + ' g';
+    document.getElementById('printTimeOut').textContent  = fmtTime(v.printTime);
+    document.getElementById('machineCostOut').textContent= fmt(v.machineCost) + ' 円';
+    document.getElementById('depYearOut').textContent    = v.depYear          + ' 年';
+    document.getElementById('workDaysOut').textContent   = v.workDays         + ' 日';
+    document.getElementById('workHoursOut').textContent  = v.workHours        + ' 時間';
+    document.getElementById('powerOut').textContent      = v.power            + ' W';
+    document.getElementById('elecRateOut').textContent   = v.elecRate         + ' 円/kWh';
+    document.getElementById('defectRateOut').textContent = v.defectRate       + ' %';
+    const filCost    = (v.filPrice / 1000) * v.filGram;
+    const totalMins  = v.depYear * v.workDays * v.workHours * 60;
+    const depCost    = (v.machineCost / totalMins) * v.printTime;
+    const elecCost   = (v.power / 1000) * (v.printTime / 60) * v.elecRate;
+    const directCost = filCost + depCost + elecCost;
+    const yieldRate  = (100 - v.defectRate) / 100;
+    const totalCost  = directCost / yieldRate;
+    document.getElementById('r-fil').textContent    = fmtD(filCost)    + ' 円';
+    document.getElementById('r-dep').textContent    = fmtD(depCost)    + ' 円';
+    document.getElementById('r-elec').textContent   = fmtD(elecCost)   + ' 円';
+    document.getElementById('r-direct').textContent = fmtD(directCost) + ' 円';
+    document.getElementById('r-factor').textContent = '× ' + (1 / yieldRate).toFixed(3);
+    document.getElementById('r-total').textContent  = fmtD(totalCost)  + ' 円';
+    document.getElementById('m-price2x').textContent= fmt(totalCost * 2) + ' 円';
+    document.getElementById('m-price3x').textContent= fmt(totalCost * 3) + ' 円';
+    const colors = ['#378ADD','#1D9E75','#BA7517'];
+    const labels = ['フィラメント','機器償却','電気代'];
+    const vals   = [filCost, depCost, elecCost];
+    const total  = vals.reduce((a, b) => a + b, 0);
+    document.getElementById('barWrap').innerHTML = vals.map((val, i) =>
+      `<div class="bar-seg" style="width:${(val/total*100).toFixed(1)}%;background:${colors[i]};"></div>`
+    ).join('');
+    document.getElementById('legend').innerHTML = vals.map((val, i) =>
+      `<span><span class="legend-dot" style="background:${colors[i]};"></span>${labels[i]} ${(val/total*100).toFixed(0)}%</span>`
+    ).join('');
+  }
+  ids.forEach(id => document.getElementById(id).addEventListener('input', calc));
+  calc();
+</script>
+</body>
+</html>
