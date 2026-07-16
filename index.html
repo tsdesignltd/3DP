@@ -157,6 +157,44 @@
     }
     .price-label { font-size: 12px; color: #6e6e73; margin-bottom: 6px; }
     .price-num { font-size: 22px; font-weight: 600; color: #1d1d1f; }
+    /* 利益率と見積額 */
+    .estimate-card {
+      background: #f5f5f7;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    .estimate-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 13px;
+      color: #6e6e73;
+    }
+    .estimate-head strong {
+      color: #1d1d1f;
+      font-size: 15px;
+    }
+    .estimate-label {
+      display: block;
+      margin-top: 16px;
+      margin-bottom: 6px;
+      font-size: 12px;
+      color: #6e6e73;
+    }
+    .estimate-input {
+      width: 100%;
+      border: 1px solid #d2d2d7;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #1d1d1f;
+      padding: 11px 12px;
+      font: inherit;
+      font-size: 20px;
+      font-weight: 600;
+      text-align: right;
+    }
   </style>
 </head>
 <body>
@@ -238,9 +276,18 @@
       <div class="price-num" id="m-price3x">—</div>
     </div>
   </div>
+  <div class="estimate-card">
+    <div class="estimate-head">
+      <span>利益率（原価に対する上乗せ率）</span>
+      <strong id="profitRateOut">30 %</strong>
+    </div>
+    <input type="range" min="0" max="100" step="1" value="30" id="profitRate">
+    <label class="estimate-label" for="estimateAmount">見積額（原価＋利益）</label>
+    <input class="estimate-input" type="text" id="estimateAmount" value="—" readonly aria-live="polite">
+  </div>
 </div>
 <script>
-  const ids = ['filPrice','filGram','machineCost','depYear','workDays','workHours','printTime','power','elecRate','defectRate'];
+  const ids = ['filPrice','filGram','machineCost','depYear','workDays','workHours','printTime','power','elecRate','defectRate','profitRate'];
   const fmt  = n => Math.round(n).toLocaleString('ja-JP');
   const fmtD = n => n.toFixed(2);
   const fmtTime = mins => {
@@ -275,6 +322,8 @@
     document.getElementById('r-total').textContent  = fmtD(totalCost)  + ' 円';
     document.getElementById('m-price2x').textContent= fmt(totalCost * 2) + ' 円';
     document.getElementById('m-price3x').textContent= fmt(totalCost * 3) + ' 円';
+    document.getElementById('profitRateOut').textContent = v.profitRate + ' %';
+    document.getElementById('estimateAmount').value = fmt(totalCost * (1 + v.profitRate / 100)) + ' 円';
     const colors = ['#378ADD','#1D9E75','#BA7517'];
     const labels = ['フィラメント','機器償却','電気代'];
     const vals   = [filCost, depCost, elecCost];
