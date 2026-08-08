@@ -64,6 +64,28 @@
       margin-bottom: 10px;
       color: #1d1d1f;
     }
+    .editable-var {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-height: 25px;
+    }
+    .value-input {
+      width: 72px;
+      border: 1px solid #d2d2d7;
+      border-radius: 7px;
+      background: #ffffff;
+      color: #1d1d1f;
+      padding: 3px 5px;
+      font: inherit;
+      text-align: right;
+    }
+    .value-input.time {
+      width: 46px;
+    }
+    .value-unit {
+      white-space: nowrap;
+    }
     /* スライダー共通 */
     input[type="range"] {
       width: 100%;
@@ -209,12 +231,20 @@
     </div>
     <div class="var-card">
       <div class="var-card-label">フィラメント使用量</div>
-      <div class="var-card-val" id="filGramOut">10 g</div>
-      <input type="range" min="1" max="200" step="1" value="10" id="filGram">
+      <div class="var-card-val editable-var">
+        <input class="value-input" type="number" min="1" max="1000" step="1" value="10" id="filGramInput" inputmode="numeric" aria-label="フィラメント使用量">
+        <span class="value-unit">g</span>
+      </div>
+      <input type="range" min="1" max="1000" step="1" value="10" id="filGram">
     </div>
     <div class="var-card">
       <div class="var-card-label">出力時間</div>
-      <div class="var-card-val" id="printTimeOut">0h 20m</div>
+      <div class="var-card-val editable-var">
+        <input class="value-input time" type="number" min="0" max="30" step="1" value="0" id="printHoursInput" inputmode="numeric" aria-label="出力時間">
+        <span class="value-unit">h</span>
+        <input class="value-input time" type="number" min="0" max="59" step="1" value="20" id="printMinutesInput" inputmode="numeric" aria-label="出力分">
+        <span class="value-unit">m</span>
+      </div>
       <input type="range" min="1" max="1800" step="1" value="20" id="printTime">
     </div>
   </div>
@@ -298,8 +328,9 @@
     const v = {};
     ids.forEach(id => v[id] = parseFloat(document.getElementById(id).value));
     document.getElementById('filPriceOut').textContent   = fmt(v.filPrice)   + ' 円/kg';
-    document.getElementById('filGramOut').textContent    = v.filGram          + ' g';
-    document.getElementById('printTimeOut').textContent  = fmtTime(v.printTime);
+    document.getElementById('filGramInput').value = v.filGram;
+    document.getElementById('printHoursInput').value = Math.floor(v.printTime / 60);
+    document.getElementById('printMinutesInput').value = v.printTime % 60;
     document.getElementById('machineCostOut').textContent= fmt(v.machineCost) + ' 円';
     document.getElementById('depYearOut').textContent    = v.depYear          + ' 年';
     document.getElementById('workDaysOut').textContent   = v.workDays         + ' 日';
@@ -336,6 +367,37 @@
     ).join('');
   }
   ids.forEach(id => document.getElementById(id).addEventListener('input', calc));
+
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+  const filGramInput = document.getElementById('filGramInput');
+  filGramInput.addEventListener('input', () => {
+    if (filGramInput.value === '') return;
+    document.getElementById('filGram').value = clamp(Math.round(Number(filGramInput.value)), 1, 1000);
+    calc();
+  });
+  filGramInput.addEventListener('change', () => {
+    if (filGramInput.value === '') filGramInput.value = document.getElementById('filGram').value;
+    calc();
+  });
+
+  const syncPrintTimeFromInputs = () => {
+    const hoursInput = document.getElementById('printHoursInput');
+    const minutesInput = document.getElementById('printMinutesInput');
+    const hours = Number(hoursInput.value || 0);
+    const minutes = Number(minutesInput.value || 0);
+    document.getElementById('printTime').value = clamp(Math.round(hours * 60 + minutes), 1, 1800);
+    calc();
+  };
+  ['printHoursInput', 'printMinutesInput'].forEach(id => {
+    const input = document.getElementById(id);
+    input.addEventListener('input', () => {
+      if (input.value === '') return;
+      syncPrintTimeFromInputs();
+    });
+    input.addEventListener('change', syncPrintTimeFromInputs);
+  });
+
   calc();
 </script>
 </body>
