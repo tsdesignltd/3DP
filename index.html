@@ -80,6 +80,9 @@
       font: inherit;
       text-align: right;
     }
+    .value-input.price {
+      width: 96px;
+    }
     .value-input.time {
       width: 46px;
     }
@@ -226,8 +229,11 @@
   <div class="var-grid">
     <div class="var-card">
       <div class="var-card-label">フィラメント単価</div>
-      <div class="var-card-val" id="filPriceOut">3,000 円/kg</div>
-      <input type="range" min="1000" max="50000" step="500" value="3000" id="filPrice">
+      <div class="var-card-val editable-var">
+        <input class="value-input price" type="number" min="1000" max="50000" step="1" value="3000" id="filPriceInput" inputmode="numeric" aria-label="フィラメント単価">
+        <span class="value-unit">円/kg</span>
+      </div>
+      <input type="range" min="1000" max="50000" step="1" value="3000" id="filPrice">
     </div>
     <div class="var-card">
       <div class="var-card-label">フィラメント使用量</div>
@@ -327,7 +333,7 @@
   function calc() {
     const v = {};
     ids.forEach(id => v[id] = parseFloat(document.getElementById(id).value));
-    document.getElementById('filPriceOut').textContent   = fmt(v.filPrice)   + ' 円/kg';
+    document.getElementById('filPriceInput').value = v.filPrice;
     document.getElementById('filGramInput').value = v.filGram;
     document.getElementById('printHoursInput').value = Math.floor(v.printTime / 60);
     document.getElementById('printMinutesInput').value = v.printTime % 60;
@@ -369,6 +375,17 @@
   ids.forEach(id => document.getElementById(id).addEventListener('input', calc));
 
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+  const filPriceInput = document.getElementById('filPriceInput');
+  filPriceInput.addEventListener('input', () => {
+    if (filPriceInput.value === '') return;
+    document.getElementById('filPrice').value = clamp(Math.round(Number(filPriceInput.value)), 1000, 50000);
+    calc();
+  });
+  filPriceInput.addEventListener('change', () => {
+    if (filPriceInput.value === '') filPriceInput.value = document.getElementById('filPrice').value;
+    calc();
+  });
 
   const filGramInput = document.getElementById('filGramInput');
   filGramInput.addEventListener('input', () => {
