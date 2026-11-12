@@ -201,7 +201,7 @@
     /* 売価カード */
     .price-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 12px;
       margin-top: 16px;
     }
@@ -296,6 +296,10 @@
       <div class="price-num" id="m-price2x">—</div>
     </div>
     <div class="price-card">
+      <div class="price-label">想定売価（原価2.5倍）</div>
+      <div class="price-num" id="m-price25x">—</div>
+    </div>
+    <div class="price-card">
       <div class="price-label">想定売価（原価3倍）</div>
       <div class="price-num" id="m-price3x">—</div>
     </div>
@@ -340,6 +344,7 @@
     document.getElementById('r-factor').textContent = '× ' + (1 / yieldRate).toFixed(3);
     document.getElementById('r-total').textContent  = fmtD(totalCost)  + ' 円';
     document.getElementById('m-price2x').textContent= fmt(totalCost * 2) + ' 円';
+    document.getElementById('m-price25x').textContent= fmt(totalCost * 2.5) + ' 円';
     document.getElementById('m-price3x').textContent= fmt(totalCost * 3) + ' 円';
     const colors = ['#378ADD','#1D9E75','#BA7517'];
     const labels = ['フィラメント','機器償却','電気代'];
